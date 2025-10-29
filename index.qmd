@@ -109,6 +109,9 @@ Our purpose is to investigate whether Coors Field in Denver, Colorado is truly t
 
 **Question 1: Hypothesis Formation**
 - Why might high altitude affect baseball performance?  Is Coors Field affected by high altitude?
+
+**Answer:** 
+At high altitudes, the thinner air causes baseballs to travel farther than they would at lower elevations. To offset this effect, Coors Field was designed with outfield fences set unusually far from home plate, making it the largest outfield in Major League Baseball. Despite the extended fences, for many years the park still yielded the most home runs in the league—and because of its vast outfield, it also produced the highest number of doubles and triples.
 :::
 
 ## Stage 2: Curation of Content
@@ -153,7 +156,26 @@ print(avgDF_2021.head())
 
 **Question 1: Data Aggregation Strategy**
 - How many games are in the dataset? Why do we aggregate individual games into stadium averages before we start the visualization process?
+
+**Answer**
+```{python}
+totalGames = len(df2010) + len(df2021)
+print(f"\n{len(df2010)} games in 2010 and {len(df2021)} games in 2021 adding to {totalGames} games in the dataset")
+
+homeRun2010 = df2010.groupby('home').size().sort_values(ascending=False)
+print(homeRun2010.head(3))
+
+homeRun2021 = df2021.groupby('home').size().sort_values(ascending=False)
+print(homeRun2021.head(3))
+```
 :::
+By summarizing results into stadium averages, we can clearly observe the average number of runs and home runs scored at each stadium in a given year. This approach highlights differences in performance across venues and helps identify which stadiums are most conducive to high scoring.
+
+**Benefits of aggregation:**
+
+- Reduces random noise
+- Reveals underlying patterns
+- Produces cleaner data and clearer visualizations
 
 ## Stage 3: Structuring of Visual Mappings
 
@@ -212,10 +234,18 @@ plt.show()
 - Why is a horizontal bar chart better than a scatter plot for this data?
 - When would you choose a vertical bar chart over horizontal?
 
+**Answer**
+- A horizontal bar chart clearly shows how stadium averages differ, while a scatter plot would obscure categorical comparisons.
+- A vertical bar chart will be useful for chronological or short-label data (like seasons or months)
+
 **Question 2: Aesthetic Mappings**
 - What does the color highlighting accomplish in Approach 4?
 - How does position (x/y) compare to color for encoding data?
 
+**Answer**
+
+- Color highlighting adds emphasis and supports interpretability — it communicates importance or exception within the broader dataset. The Colorado (COL) stadium — within a larger comparison of average runs per stadium.
+- Position (x/y) is best for representing data magnitude — exact comparisons. Color is best for categorical distinction or highlighting — drawing attention to a subset or pattern.
 :::
 
 ## Stage 4: Formatting for Your Audience
@@ -287,8 +317,47 @@ print(f"Colorado is {((colorado_runs / avgDF_2010_sorted.totalRuns.mean()) - 1) 
 - What elements make this visualization suitable for a business presentation?
 - Is the annotation on the visualization helpful?  Can you fix its placement?
 
-:::
+**Answer**
+- The visualization follows storytelling design principles — it’s simple, focused on one main insight, and visually polished enough for decision-makers to interpret quickly.
+- The annotation is helpful because it draws attention to the data point that supports the  headline.
 
+However, the current placement at (colorado_runs + 0.5, colorado_index) can sometimes overlap with the rightmost edge or extend too far, depending on scaling.
+
+```{python}
+# Improved annotation placement: offset vertically instead of horizontally
+ax.annotate(f"COL: {colorado_runs:.2f} runs/game",
+            xy=(colorado_runs, colorado_index),
+            xytext=(max(avgDF_2010_sorted.totalRuns) * 0.75, colorado_index + 0.8),
+            arrowprops=dict(arrowstyle='->', color='darkorchid', lw=2),
+            fontsize=10, fontweight='bold', color='darkorchid',
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="darkorchid", alpha=0.6))
+
+league_avg = avgDF_2010_sorted.totalRuns.mean()
+ax.axvline(league_avg, color='grey', linestyle='--', lw=1)
+ax.text(league_avg + 0.1, 0.5, f"League Avg: {league_avg:.2f}", 
+        color='grey', fontsize=9, rotation=90, va='bottom')
+
+# Set axis limits for better framing
+ax.set_xlim(0, max(avgDF_2010_sorted.totalRuns) * 1.1)
+
+# Light grid for readability
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# Print summary stats
+print(f"\nSummary Statistics for 2010:")
+print(f"Colorado (COL) average runs per game: {colorado_runs:.2f}")
+print(f"League average runs per game: {league_avg:.2f}")
+print(f"Colorado is {((colorado_runs / league_avg) - 1) * 100:.1f}% above league average")
+```
+:::
+The fixed annotation 
+
+- Moves the annotation upward and leftward, keeping it inside the chart area.
+- Uses a white semi-transparent background box (bbox) to ensure text remains legible.
+- Keeps the arrow clean and visible while avoiding crowding.
 
 ## Advanced Object-Oriented Techniques
 
@@ -320,9 +389,137 @@ comparison_data = pd.merge(
 **Question 1: Using Subplot Layout**
 - Create a two-facet visualization that shows the total runs for 2010 and 2021 for each stadium in a single figure.  Highlight Colorado in the visualization.
 
+**Answer**
+```{python}
+#| label: two-facet-visualization
+#| echo: true
+
+# Advanced Object-Oriented Techniques: Two-Facet Visualization
+# Create a comparison between 2010 and 2021 stadium performance
+
+# Sort both datasets by total runs for consistent ordering
+avgDF_2010_sorted = avgDF_2010.sort_values('totalRuns', ascending=True)
+avgDF_2021_sorted = avgDF_2021.sort_values('totalRuns', ascending=True)
+
+# Create figure with two subplots side by side
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.5, 7))
+
+# Define colors for highlighting Colorado
+colorado_colors_2010 = ["darkorchid" if stadium == "COL" else "lightgrey" 
+                       for stadium in avgDF_2010_sorted.home]
+colorado_colors_2021 = ["darkorchid" if stadium == "COL" else "lightgrey" 
+                       for stadium in avgDF_2021_sorted.home]
+
+# Create horizontal bar charts for both years
+bars1 = ax1.barh(avgDF_2010_sorted.home, avgDF_2010_sorted.totalRuns, color=colorado_colors_2010)
+bars2 = ax2.barh(avgDF_2021_sorted.home, avgDF_2021_sorted.totalRuns, color=colorado_colors_2021)
+
+# Add titles and labels for both subplots
+ax1.set_title("2010 Stadium Performance", fontsize=14, fontweight='bold', pad=10, color='brown')
+ax1.set_xlabel("Average Runs Per Game", fontsize=12, color = 'darkblue')
+ax1.set_ylabel("Stadium (Home Team)", fontsize=12, color = 'darkgreen')
+
+ax2.set_title("2021 Stadium Performance", fontsize=14, fontweight='bold', pad=10, color='brown')
+ax2.set_xlabel("Average Runs Per Game", fontsize=12, color = 'darkblue')
+ax2.set_ylabel("Stadium (Home Team)", fontsize=12, color = 'darkgreen')
+
+# Add main title for the entire figure
+fig.suptitle("Colorado Rockies Stadium Performance: 2010 vs 2021", 
+             fontsize=16, fontweight='bold', y=1.02, color='darkblue')
+
+       
+
+# Add legend
+colorado_bar = plt.Rectangle((0,0),1,1, color="darkorchid", label="Colorado Rockies")
+other_bar = plt.Rectangle((0,0),1,1, color="lightgrey", label="Other Stadiums")
+fig.legend(handles=[colorado_bar, other_bar], loc='lower center', frameon=True, fontsize=8, ncol=2, bbox_to_anchor=(0.5, -0.05))
+
+# Add annotations for Colorado in both years
+# 2010 annotation
+colorado_index_2010 = avgDF_2010_sorted[avgDF_2010_sorted.home == "COL"].index[0]
+colorado_runs_2010 = avgDF_2010_sorted[avgDF_2010_sorted.home == "COL"]["totalRuns"].iloc[0]
+ax1.annotate(f"COL: {colorado_runs_2010:.2f}", 
+             xy=(colorado_runs_2010, colorado_index_2010 + 20), 
+             xytext=(colorado_runs_2010 - 0.8, colorado_index_2010 + 15),
+             arrowprops=dict(arrowstyle='->', color='darkorchid', lw=2),
+             fontsize=10, fontweight='bold', color='darkorchid')
+
+# 2021 annotation
+colorado_index_2021 = avgDF_2021_sorted[avgDF_2021_sorted.home == "COL"].index[0]
+colorado_runs_2021 = avgDF_2021_sorted[avgDF_2021_sorted.home == "COL"]["totalRuns"].iloc[0]
+ax2.annotate(f"COL: {colorado_runs_2021:.2f}", 
+             xy=(colorado_runs_2021, colorado_index_2021 + 18), 
+             xytext=(colorado_runs_2021 - 0.5, colorado_index_2021 + 15),
+             arrowprops=dict(arrowstyle='->', color='darkorchid', lw=2),
+             fontsize=10, fontweight='bold', color='darkorchid')
+
+# Set consistent x-axis limits for both subplots
+max_runs = max(max(avgDF_2010_sorted.totalRuns), max(avgDF_2021_sorted.totalRuns))
+ax1.set_xlim(0, max_runs * 1.1)
+ax2.set_xlim(0, max_runs * 1.1)
+
+# Add grids for easier reading
+ax1.grid(True, alpha=0.3)
+ax2.grid(True, alpha=0.3)
+
+# Adjust layout to prevent overlap
+plt.tight_layout()
+plt.subplots_adjust(top=0.9)  # Make room for main title
+plt.show()
+
+# Print comparison statistics
+print(f"\nColorado Rockies Stadium Performance Comparison:")
+print(f"2010: {colorado_runs_2010:.2f} runs per game")
+print(f"2021: {colorado_runs_2021:.2f} runs per game")
+print(f"Change: {colorado_runs_2021 - colorado_runs_2010:+.2f} runs per game")
+print(f"Percentage change: {((colorado_runs_2021 / colorado_runs_2010) - 1) * 100:+.1f}%")
+
+print(f"\nLeague Averages:")
+print(f"2010 League Average: {avgDF_2010_sorted.totalRuns.mean():.2f} runs/game")
+print(f"2021 League Average: {avgDF_2021_sorted.totalRuns.mean():.2f} runs/game")
+print(f"\nColorado vs League Average:")
+print(f"2010: {colorado_runs_2010 - avgDF_2010_sorted.totalRuns.mean():+.2f} runs/game above league average")
+print(f"2021: {colorado_runs_2021 - avgDF_2021_sorted.totalRuns.mean():+.2f} runs/game above league average")
+print(f"\nColorado vs League Average Percentage Change:")
+print(f"Colorado is {((colorado_runs_2021 / avgDF_2010_sorted.totalRuns.mean()) - 1) * 100:.1f}% above league average in 2021")
+print(f"Colorado is {((colorado_runs_2010 / avgDF_2010_sorted.totalRuns.mean()) - 1) * 100:.1f}% above league average in 2010")
+
+```
+
 **Question 2: Explanation of the Visualization**
 - Ask AI To Add A Paragraph Here To Explain The Visualization
+
+**Answer**
+
+**Summary of the Visualization:** 
+
+- Colorado's dominant run-friendliness is revealed across 2010 and 2021 seasons
+- Coors Field consistently leads all MLB stadiums in average runs per game, which confirms the altitude advantage makes it the most hitter-friendly ballpark in baseball
+- Visualization ranks every stadium by total runs, showing the entire league's spectrum, which extends from highest-scoring environments (Colorado) to most pitcher-friendly parks
+- By tracking both years, we can identify which teams’ home parks rank closest to Colorado (high-run environments) versus those furthest away (low-run, pitcher-friendly parks).
+- The gap between Colorado and league average reveals the magnitude of Coors Field’s scoring advantage, while the overall distribution shows how teams are distributed across the scoring spectrum
+- This comparison across 2010 vs 2021 helps reveal era effects, rule changes, and competitive balance shifts that impact league-wide run rates over time.
+
+**Comparable stadiums:**
+
+- **Camden Yards (Orioles):** 
+  - Known as one of baseball's most influential modern ballparks
+  - Typically ranks near the middle of the run-friendliness spectrum
+  - Dimensions and design create relatively neutral environment for scoring
+  - Interesting benchmark to evaluate whether Colorado is truly exceptional vs. simply above-average
+
+- **Fenway Park (Red Sox):** 
+  - One of baseball's most iconic venues
+  - Unusual dimensions and Green Monster create unique scoring profile
+  - Located near bottom of run-friendliness rankings (pitcher-friendly park)
+  - Provides sharp contrast to Colorado's high-run environment
+  - Illustrates dramatic range of scoring environments across MLB stadiums
+
 - Does AI come to the right conclusion?  If not, why not?
+
+**Answer**
+
+AI (I used chatGPT) came up with a technical explaination (around constructs used in the Python code). It also did not come to the right conclusion to begin with. The prompt had to be rephrased to get a reasonable answer as it was not understanding the dataset and visualization properly.
 :::
 
 ## Student Analysis Section: Mastering Object-Oriented Matplotlib {#student-analysis-section}
